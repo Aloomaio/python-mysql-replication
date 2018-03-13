@@ -136,7 +136,8 @@ class BinLogStreamReader(object):
                  report_slave=None, slave_uuid=None,
                  pymysql_wrapper=None,
                  fail_on_table_metadata_unavailable=False,
-                 slave_heartbeat=None):
+                 slave_heartbeat=None,
+                 only_schemas_and_tables=None):
         """
         Attributes:
             ctl_connection_settings: Connection settings for cluster holding schema information
@@ -164,6 +165,8 @@ class BinLogStreamReader(object):
                              on replication resumption (in case many event to skip in
                              binlog). See MASTER_HEARTBEAT_PERIOD in mysql documentation
                              for semantics
+            only_schemas_and_tables: dict in the form of {schema: [tables]}
+                                     to filter tuples of schemas and tables
         """
 
         self.__connection_settings = connection_settings
@@ -181,6 +184,7 @@ class BinLogStreamReader(object):
         self.__ignored_tables = ignored_tables
         self.__only_schemas = only_schemas
         self.__ignored_schemas = ignored_schemas
+        self.__only_schemas_and_tables = only_schemas_and_tables
         self.__freeze_schema = freeze_schema
         self.__allowed_events = self._allowed_event_list(
             only_events, ignored_events, filter_non_implemented_events)
@@ -430,7 +434,8 @@ class BinLogStreamReader(object):
                                                self.__only_schemas,
                                                self.__ignored_schemas,
                                                self.__freeze_schema,
-                                               self.__fail_on_table_metadata_unavailable)
+                                               self.__fail_on_table_metadata_unavailable,
+                                               self.__only_schemas_and_tables)
 
             if binlog_event.event_type == ROTATE_EVENT:
                 self.log_pos = binlog_event.event.position

@@ -25,6 +25,7 @@ class RowsEvent(BinLogEvent):
         self.__ignored_tables = kwargs["ignored_tables"]
         self.__only_schemas = kwargs["only_schemas"]
         self.__ignored_schemas = kwargs["ignored_schemas"]
+        self.__only_schemas_and_tables = kwargs["only_schemas_and_tables"]
 
         #Header
         self.table_id = self._read_table_id()
@@ -52,6 +53,14 @@ class RowsEvent(BinLogEvent):
             self._processed = False
             return
 
+        if self.__only_schemas_and_tables is not None:
+            if self.schema not in self.__only_schemas_and_tables:
+                self._processed = False
+                return
+
+            elif self.table not in self.__only_schemas_and_tables[self.schema]:
+                self._processed = False
+                return
 
         #Event V2
         if self.event_type == BINLOG.WRITE_ROWS_EVENT_V2 or \
@@ -528,7 +537,7 @@ class UpdateRowsEvent(RowsEvent):
 
 
 class TableMapEvent(BinLogEvent):
-    """This evenement describe the structure of a table.
+    """This event describe the structure of a table.
     It's sent before a change happens on a table.
     An end user of the lib should have no usage of this
     """
