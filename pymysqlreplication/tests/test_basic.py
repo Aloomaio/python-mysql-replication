@@ -155,7 +155,7 @@ class TestBasicBinLogStreamReader(base.PyMySQLReplicationTestCase):
             self.database,
             server_id=1024,
             only_events=[WriteRowsEvent],
-            only_tables = ["test_2"]
+            table_filter=lambda x, y: y == "test_2"
         )
 
         query = "CREATE TABLE test_2 (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"
@@ -201,8 +201,7 @@ class TestBasicBinLogStreamReader(base.PyMySQLReplicationTestCase):
             self.database,
             server_id=1024,
             only_events=[WriteRowsEvent],
-            only_tables = ["test_2"],
-            ignored_tables = ["test_3"]
+            table_filter=lambda x, y: y == "test_2"
         )
 
         query = "CREATE TABLE test_2 (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"

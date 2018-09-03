@@ -18,10 +18,7 @@ class BinLogEvent(object):
     )
 
     def __init__(self, from_packet, event_size, table_map, ctl_connection,
-                 only_tables=None,
-                 ignored_tables=None,
-                 only_schemas=None,
-                 ignored_schemas=None,
+                 table_filter=None,
                  freeze_schema=False,
                  fail_on_table_metadata_unavailable=False):
         self.packet = from_packet

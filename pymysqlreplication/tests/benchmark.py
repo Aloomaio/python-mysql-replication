@@ -19,13 +19,15 @@ def execute(con, query):
     c.execute(query)
     return c
 
+
 def consume_events():
+    table_filter = lambda table, schema: table == 'test'
     stream = BinLogStreamReader(connection_settings=database,
                                 server_id=3,
                                 resume_stream=False,
                                 blocking=True,
-                                only_events = [UpdateRowsEvent],
-                                only_tables = ['test'] )
+                                only_events=[UpdateRowsEvent],
+                                table_filter=table_filter)
     start = time.clock()
     i = 0.0
     for binlogevent in stream:

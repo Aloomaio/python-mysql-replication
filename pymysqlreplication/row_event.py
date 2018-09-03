@@ -18,9 +18,8 @@ from .table import Table
 
 class RowsEvent(BinLogEvent):
     __slots__ = (
-        '__rows', '__only_tables', '__ignored_tables', '__only_schemas',
-        '__ignored_schemas', 'table_id', 'primary_key', 'schema', 'table',
-        '_processed', 'flags', 'extra_data_length', 'extra_data',
+        '__rows', '__table_filter', 'table_id', 'primary_key', 'schema',
+        'table', '_processed', 'flags', 'extra_data_length', 'extra_data',
         'number_of_columns', 'columns'
     )
 
@@ -28,10 +27,7 @@ class RowsEvent(BinLogEvent):
         super(RowsEvent, self).__init__(from_packet, event_size, table_map,
                                         ctl_connection, **kwargs)
         self.__rows = None
-        self.__only_tables = kwargs["only_tables"]
-        self.__ignored_tables = kwargs["ignored_tables"]
-        self.__only_schemas = kwargs["only_schemas"]
-        self.__ignored_schemas = kwargs["ignored_schemas"]
+        self.__table_filter = kwargs["table_filter"]
 
         #Header
         self.table_id = self._read_table_id()
@@ -45,20 +41,10 @@ class RowsEvent(BinLogEvent):
             self._processed = False
             return
 
-        if self.__only_tables is not None and self.table not in self.__only_tables:
+        if self.__table_filter and \
+                self.__table_filter(self.schema, self.table) is False:
             self._processed = False
             return
-        elif self.__ignored_tables is not None and self.table in self.__ignored_tables:
-            self._processed = False
-            return
-
-        if self.__only_schemas is not None and self.schema not in self.__only_schemas:
-            self._processed = False
-            return
-        elif self.__ignored_schemas is not None and self.schema in self.__ignored_schemas:
-            self._processed = False
-            return
-
 
         #Event V2
         if self.event_type == BINLOG.WRITE_ROWS_EVENT_V2 or \
@@ -555,10 +541,7 @@ class TableMapEvent(BinLogEvent):
     def __init__(self, from_packet, event_size, table_map, ctl_connection, **kwargs):
         super(TableMapEvent, self).__init__(from_packet, event_size,
                                             table_map, ctl_connection, **kwargs)
-        self.__only_tables = kwargs["only_tables"]
-        self.__ignored_tables = kwargs["ignored_tables"]
-        self.__only_schemas = kwargs["only_schemas"]
-        self.__ignored_schemas = kwargs["ignored_schemas"]
+        self.__table_filter = kwargs["table_filter"]
         self.__freeze_schema = kwargs["freeze_schema"]
 
         # Post-Header
@@ -577,17 +560,8 @@ class TableMapEvent(BinLogEvent):
         self.table_length = byte2int(self.packet.read(1))
         self.table = self.packet.read(self.table_length).decode()
 
-        if self.__only_tables is not None and self.table not in self.__only_tables:
-            self._processed = False
-            return
-        elif self.__ignored_tables is not None and self.table in self.__ignored_tables:
-            self._processed = False
-            return
-
-        if self.__only_schemas is not None and self.schema not in self.__only_schemas:
-            self._processed = False
-            return
-        elif self.__ignored_schemas is not None and self.schema in self.__ignored_schemas:
+        if self.__table_filter and \
+                self.__table_filter(self.schema, self.table) is False:
             self._processed = False
             return
 
