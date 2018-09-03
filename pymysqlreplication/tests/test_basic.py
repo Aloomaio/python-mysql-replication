@@ -216,6 +216,39 @@ class TestBasicBinLogStreamReader(base.PyMySQLReplicationTestCase):
         event = self.stream.fetchone()
         self.assertEqual(event.table, "test_2")
 
+    def test_advanced_filtering_tables_and_schemas(self):
+        self.stream.close()
+        self.assertEqual(self.bin_log_format(), "ROW")
+        table_filter = \
+            lambda x, y: y in ['test_2', 'test_3'] or y.startswith('tmp_')
+        self.stream = BinLogStreamReader(
+            self.database,
+            server_id=1024,
+            only_events=[WriteRowsEvent],
+            table_filter=table_filter
+        )
+
+        query = "CREATE TABLE test_2 (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"
+        self.execute(query)
+        query = "CREATE TABLE tmp_tbl (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"
+        self.execute(query)
+        query = "CREATE TABLE test_4 (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"
+        self.execute(query)
+        query = "CREATE TABLE test_3 (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"
+        self.execute(query)
+
+        self.execute("INSERT INTO test_2 (data) VALUES ('alpha')")
+        self.execute("INSERT INTO tmp_tbl (data) VALUES ('alpha')")
+        self.execute("INSERT INTO test_3 (data) VALUES ('alpha')")
+        self.execute("INSERT INTO test_2 (data) VALUES ('beta')")
+        self.execute("COMMIT")
+        event = self.stream.fetchone()
+        self.assertEqual(event.table, "test_2")
+        event = self.stream.fetchone()
+        self.assertEqual(event.table, "tmp_tbl")
+        event = self.stream.fetchone()
+        self.assertEqual(event.table, "test_3")
+
     def test_write_row_event(self):
         query = "CREATE TABLE test (id INT NOT NULL AUTO_INCREMENT, data VARCHAR (50) NOT NULL, PRIMARY KEY (id))"
         self.execute(query)
