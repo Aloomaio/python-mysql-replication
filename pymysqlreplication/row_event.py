@@ -238,8 +238,7 @@ class RowsEvent(BinLogEvent):
     def __read_string(self, size, column):
         string = self.packet.read_length_coded_pascal_string(size)
         if column.character_set_name is not None:
-            encoding = self.charset_to_encoding(column.character_set_name)
-            string = string.decode(encoding)
+            string = string.decode(charset_to_encoding(column.character_set_name))
         return string
 
     def __read_bit(self, column):
